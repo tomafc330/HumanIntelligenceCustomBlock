@@ -1,34 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BASE_URL } from './settings';
 import {
   Box,
   Button,
-  expandRecord,
+  colors,
+  Dialog,
   FieldPickerSynced,
   FormField,
   Heading,
   Icon,
   initializeBlock,
   Input,
+  registerRecordActionDataCallback,
   Select,
   Text,
-  Dialog,
   useBase,
   useGlobalConfig,
-  useRecords,
   useRecordById,
-  colors
+  useRecords,
+  useWatchable
 } from '@airtable/blocks/ui';
 import { FieldType } from '@airtable/blocks/models';
-import { globalConfig } from "@airtable/blocks";
-
+import { cursor } from '@airtable/blocks';
 
 function MTurkBlock() {
   const base = useBase();
 
+  useWatchable(cursor, ['activeTableId', 'activeViewId']);
+
   // Read the user's choice for which table and view to use from globalConfig.
   const globalConfig = useGlobalConfig();
-  const tableId = globalConfig.get('selectedTableId');
+  const tableId = cursor.activeTableId;
   const fromFieldId = globalConfig.get('selectedFromFieldId');
   const toFieldId = globalConfig.get('selectedToFieldId');
 
@@ -36,9 +38,35 @@ function MTurkBlock() {
   const fromField = table ? table.getFieldByIdIfExists(fromFieldId) : null;
   const toField = table ? table.getFieldByIdIfExists(toFieldId) : null;
 
+  const [selectedRecordId, setSelectedRecordId] = useState(null);
+  const [addingCustomTemplate, setAddingCustomTemplate] = useState(false);
+  const [customTemplateText, setCustomTemplateText] = useState('');
+  const [costPerTask, setCostPerTask] = useState(0.20);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [completedTasksFromServer, setCompletedTasksFromServer] = useState([]);
+
+  const currentRecord = useRecordById(table, selectedRecordId ? selectedRecordId : "");
+
+  // Don't need to fetch records if doneField doesn't exist (the field or it's parent table may
+  // have been deleted, or may not have been selected yet.)
+  const records = useRecords(table, { fields: [fromField] });
+
+  const options = [
+    {
+      value: "Please translate this text into French - '{text}'",
+      label: "Manual Translation To French"
+    },
+    {
+      value: "Please find a recent 1-2 lines newsworthy summary for the company {text}.",
+      label: "Sales"
+    },
+  ];
+  const [template, setTemplate] = useState(options[0].value);
+
+  recordActionBlock();
 
   function setGlobalValue(key, value) {
-    const setCheckResult = globalConfig.setAsync(key, value);
+    globalConfig.setAsync(key, value);
   }
 
   function getGlobalValue(key) {
@@ -67,12 +95,15 @@ function MTurkBlock() {
   }
 
   function populateTemplates() {
-    getGlobalValue('customTemplateTexts').map(customText => {
-      options.push({
-        value: customText,
-        label: customText
+    let globalValue = getGlobalValue('customTemplateTexts');
+    if (globalValue) {
+      globalValue.map(customText => {
+        options.push({
+          value: customText,
+          label: customText
+        })
       })
-    })
+    }
     options.push(
         {
           value: "custom",
@@ -109,11 +140,11 @@ function MTurkBlock() {
   }
 
   async function uploadTask() {
-    let questionRaw = cellRecordIdAndLabel.split('|||')[1];
+    let questionRaw = currentRecord.getCellValueAsString(fromField);
     const question = replaceText(template, questionRaw)
     const opts = {
       base_id: base.id,
-      cell_id: cellRecordIdAndLabel.split('|||')[0],
+      cell_id: selectedRecordId,
       question_raw: questionRaw,
       question: question,
       cost: costPerTask
@@ -126,38 +157,15 @@ function MTurkBlock() {
       },
     })).json();
 
-    debugger
     if (result) {
       setIsDialogOpen(true);
     }
   }
 
-  // Don't need to fetch records if doneField doesn't exist (the field or it's parent table may
-  // have been deleted, or may not have been selected yet.)
-  const records = useRecords(table, { fields: [fromField] });
-  const options = [
-    {
-      value: "Please translate this text into French - '{text}'",
-      label: "Manual Translation To French"
-    },
-    {
-      value: "Please help me find a recent 1-2 lines newsworthy summary for the company {text}.",
-      label: "Sales"
-    },
-  ];
-
-  const [template, setTemplate] = useState(options[0].value);
-  const [cellRecordIdAndLabel, setCellRecordIdAndLabel] = useState('');
-  const [addingCustomTemplate, setAddingCustomTemplate] = useState(false);
-  const [customTemplateText, setCustomTemplateText] = useState('');
-  const [costPerTask, setCostPerTask] = useState(0.20);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [completedTasksFromServer, setCompletedTasksFromServer] = useState([]);
-
   function settingsBox() {
     return <Box padding={3} margin={3} border="default" borderRadius={8}>
-      <Heading paddingTop={1} size="medium">Welcome to Mechanical Turk</Heading>
-      <Heading size="xsmall" textColor="light">Get manual tasks done for you, easily! Please
+      <Heading paddingTop={1} size="medium">Welcome to Human Intelligence Block (HIB)</Heading>
+      <Heading size="xsmall" textColor="light">Get manual tasks done for you easily on the Amazon tasks marketplace! Please
         follow the these instructions to get started.</Heading>
       <div style={{
         display: 'flex',
@@ -196,13 +204,13 @@ function MTurkBlock() {
   }
 
   function reviewOutputText() {
-    return <Text
-        display={cellRecordIdAndLabel ? 'block' : 'none'}
-        disabled={!cellRecordIdAndLabel}
+    return (currentRecord ? <Text
+        display={selectedRecordId ? 'block' : 'none'}
+        disabled={!selectedRecordId}
         style={{
           fontStyle: 'italic',
           fontWeight: 'bold'
-        }}>{replaceText(template, cellRecordIdAndLabel.split('|||')[1])}</Text>;
+        }}>{replaceText(template, currentRecord.getCellValueAsString(fromField))}</Text> : null);
   }
 
   function createTaskBox() {
@@ -215,7 +223,7 @@ function MTurkBlock() {
         padding: 0
       }}>
         <Icon name="bolt" size={23}/>
-        <Text paddingLeft={2} size="xsmall">Send a Task to Mechanical Turk</Text>
+        <Text paddingLeft={2} size="xsmall">Upload a Task to Human Intelligence</Text>
       </div>
 
       <FormField label="Enter how much you would like to pay for each task (in USD)">
@@ -258,26 +266,26 @@ function MTurkBlock() {
 
       <FormField label="Select the value to use for the task">
         <Select
-            options={records.map(record => {
+            options={(records || []).map(record => {
               return {
-                value: `${record.id}|||${record.getCellValueAsString(fromField)}`,
+                value: record.id,
                 label: record.getCellValueAsString(fromField)
               }
             })}
-            value={cellRecordIdAndLabel}
-            onChange={newValue => setCellRecordIdAndLabel(newValue)}
+            value={selectedRecordId}
+            onChange={newValue => setSelectedRecordId(newValue)}
         />
       </FormField>
       <FormField label="Review Output" marginBottom={3}>
         {reviewOutputText()}
       </FormField>
       <Button
-          onClick={() => uploadTask(base.id, cellRecordIdAndLabel)}
+          onClick={() => uploadTask(base.id, selectedRecordId)}
           variant="primary"
           size="large"
           icon="premium"
           type="submit"
-          disabled={!cellRecordIdAndLabel}
+          disabled={!selectedRecordId}
       >
         Upload Task To Mechanical Turk
       </Button>
@@ -328,6 +336,22 @@ function MTurkBlock() {
       </Button>
       {maybeDisplayCompletedTasks()}
     </Box>;
+  }
+
+  function recordActionBlock() {
+    const [recordActionData, setRecordActionData] = useState(null);
+    const callback = (data) => {
+      console.log('Record action received', data);
+      setRecordActionData(data);
+      setSelectedRecordId(data.recordId);
+    }
+    useEffect(() => {
+      // Return the unsubscribe function so it's run on cleanup.
+      return registerRecordActionDataCallback(callback);
+    }, [callback]);
+    if (recordActionData === null) {
+      return null;
+    }
   }
 
   function uploadSuccessDialog() {
@@ -405,8 +429,8 @@ function MTurkBlock() {
   return (
       <div>
         {settingsBox()}
-        {createTaskBox()}
-        {syncBox()}
+        {fromField && toField ? createTaskBox() : null}
+        {fromField && toField ? syncBox() : null}
         {uploadSuccessDialog()}
       </div>
   );
