@@ -12,9 +12,12 @@ import {
   Input,
   Select,
   Text,
+  Dialog,
   useBase,
   useGlobalConfig,
-  useRecords
+  useRecords,
+  useRecordById,
+  colors
 } from '@airtable/blocks/ui';
 import { FieldType } from '@airtable/blocks/models';
 import { globalConfig } from "@airtable/blocks";
@@ -42,8 +45,8 @@ function MTurkBlock() {
     return globalConfig.get(key);
   }
 
-  function replaceText(template, record) {
-    return template.replace("{text}", record);
+  function replaceText(template, cellId) {
+    return template.replace("{text}", cellId);
   }
 
   function setTemplateOrDialog(newValue) {
@@ -63,7 +66,7 @@ function MTurkBlock() {
     setCustomTemplateText('');
   }
 
-  function blah() {
+  function populateTemplates() {
     getGlobalValue('customTemplateTexts').map(customText => {
       options.push({
         value: customText,
@@ -79,15 +82,59 @@ function MTurkBlock() {
     return options;
   }
 
+  async function getStatus(baseId) {
+    const requestUrl = `${BASE_URL}.json/?base_id=${baseId}`;
+    const completedTasks = await (await fetch(requestUrl, {
+      cors: true, headers: {
+        "Content-Type": "application/json",
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
+      }
+    })).json();
+    setCompletedTasksFromServer(completedTasks);
+  }
+
+  async function completeTask(cellId) {
+    const opts = {
+      base_id: base.id,
+      cell_id: cellId,
+    }
+    const result = await (await fetch(`${BASE_URL}/complete.json`, {
+      method: 'post', body: JSON.stringify(opts), cors: true, headers: {
+        "Content-Type": "application/json",
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
+      },
+    })).json();
+  }
+
+  async function uploadTask() {
+    let questionRaw = cellRecordIdAndLabel.split('|||')[1];
+    const question = replaceText(template, questionRaw)
+    const opts = {
+      base_id: base.id,
+      cell_id: cellRecordIdAndLabel.split('|||')[0],
+      question_raw: questionRaw,
+      question: question,
+      cost: costPerTask
+    }
+    const result = await (await fetch(`${BASE_URL}.json`, {
+      method: 'post', body: JSON.stringify(opts), cors: true, headers: {
+        "Content-Type": "application/json",
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
+      },
+    })).json();
+
+    debugger
+    if (result) {
+      setIsDialogOpen(true);
+    }
+  }
+
   // Don't need to fetch records if doneField doesn't exist (the field or it's parent table may
   // have been deleted, or may not have been selected yet.)
   const records = useRecords(table, { fields: [fromField] });
-  const tasks = records
-      ? records.map(record => {
-        return <Task key={record.id} record={record} table={table} doneField={fromField}/>;
-      })
-      : null;
-
   const options = [
     {
       value: "Please translate this text into French - '{text}'",
@@ -100,12 +147,15 @@ function MTurkBlock() {
   ];
 
   const [template, setTemplate] = useState(options[0].value);
-  const [cellRecord, setCellRecord] = useState('');
+  const [cellRecordIdAndLabel, setCellRecordIdAndLabel] = useState('');
   const [addingCustomTemplate, setAddingCustomTemplate] = useState(false);
   const [customTemplateText, setCustomTemplateText] = useState('');
+  const [costPerTask, setCostPerTask] = useState(0.20);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [completedTasksFromServer, setCompletedTasksFromServer] = useState([]);
 
   function settingsBox() {
-    return <Box padding={3} margin={3} border="default">
+    return <Box padding={3} margin={3} border="default" borderRadius={8}>
       <Heading paddingTop={1} size="medium">Welcome to Mechanical Turk</Heading>
       <Heading size="xsmall" textColor="light">Get manual tasks done for you, easily! Please
         follow the these instructions to get started.</Heading>
@@ -145,8 +195,19 @@ function MTurkBlock() {
     </Box>;
   }
 
+  function reviewOutputText() {
+    return <Text
+        display={cellRecordIdAndLabel ? 'block' : 'none'}
+        disabled={!cellRecordIdAndLabel}
+        style={{
+          fontStyle: 'italic',
+          fontWeight: 'bold'
+        }}>{replaceText(template, cellRecordIdAndLabel.split('|||')[1])}</Text>;
+  }
+
   function createTaskBox() {
-    return <Box padding={3} margin={3} border="default">
+
+    return <Box padding={3} margin={3} border="default" borderRadius={8}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -156,16 +217,27 @@ function MTurkBlock() {
         <Icon name="bolt" size={23}/>
         <Text paddingLeft={2} size="xsmall">Send a Task to Mechanical Turk</Text>
       </div>
+
+      <FormField label="Enter how much you would like to pay for each task (in USD)">
+        <Input
+            type="textarea"
+            flex="auto"
+            value={costPerTask}
+            onChange={e => setCostPerTask(e.target.value)}
+            placeholder="ie. 0.20"
+        />
+      </FormField>
+
       <FormField label="Pick a template to use">
         <Select
-            options={blah()}
+            options={populateTemplates()}
             value={template}
             onChange={newValue => setTemplateOrDialog(newValue)}
         />
       </FormField>
 
       <form onSubmit={onAddCustomTemplate}>
-        <Box display="flex" padding={0}>
+        <Box display="flex" padding={0} borderRadius={8}>
           <FormField
               style={{
                 display: addingCustomTemplate ? 'block' : 'none'
@@ -184,43 +256,57 @@ function MTurkBlock() {
         </Box>
       </form>
 
-
       <FormField label="Select the value to use for the task">
         <Select
             options={records.map(record => {
               return {
-                value: record.id,
+                value: `${record.id}|||${record.getCellValueAsString(fromField)}`,
                 label: record.getCellValueAsString(fromField)
               }
             })}
-            value={cellRecord}
-            onChange={newValue => setCellRecord(newValue)}
+            value={cellRecordIdAndLabel}
+            onChange={newValue => setCellRecordIdAndLabel(newValue)}
         />
       </FormField>
       <FormField label="Review Output" marginBottom={3}>
-        <Text
-            display={cellRecord ? 'block' : 'none'}
-            disabled={!cellRecord}
-            style={{
-              fontStyle: 'italic',
-              fontWeight: 'bold'
-            }}>{replaceText(template, cellRecord)}</Text>
+        {reviewOutputText()}
       </FormField>
       <Button
-          onClick={() => uploadTask(base.id, cellRecord)}
+          onClick={() => uploadTask(base.id, cellRecordIdAndLabel)}
           variant="primary"
           size="large"
           icon="premium"
           type="submit"
-          disabled={!cellRecord}
+          disabled={!cellRecordIdAndLabel}
       >
         Upload Task To Mechanical Turk
       </Button>
     </Box>;
   }
 
+  function maybeDisplayCompletedTasks() {
+    return completedTasksFromServer
+        ? completedTasksFromServer.map(task => {
+          return <div>
+            <div style={{
+              marginTop: 8,
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: 18,
+              padding: 0
+            }}>
+              <Icon name="checklist" size={23}/>
+              <Text paddingLeft={2} size="xsmall">{task.question_raw}</Text>
+            </div>
+            <CompletedTask key={task.cell_id} task={task} table={table} doneField={toField}/>
+          </div>;
+        })
+        : null;
+  }
+
   function syncBox() {
-    return <Box padding={3} marginLeft={3} border="default">
+    return <Box padding={3} paddingBottom={4} marginLeft={3} marginBottom={3} border="default"
+                borderRadius={8}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -231,6 +317,7 @@ function MTurkBlock() {
         <Text paddingLeft={2} size="xsmall">Sync Completed Tasks</Text>
       </div>
       <Button
+          marginBottom={3}
           onClick={() => getStatus(base.id)}
           variant="primary"
           size="large"
@@ -239,7 +326,80 @@ function MTurkBlock() {
       >
         Retrieve Completed Tasks
       </Button>
+      {maybeDisplayCompletedTasks()}
     </Box>;
+  }
+
+  function uploadSuccessDialog() {
+    return (
+        <React.Fragment>
+          {isDialogOpen && (
+              <Dialog onClose={() => setIsDialogOpen(false)} width="320px">
+                <Dialog.CloseButton/>
+                <Heading>Task Uploaded!</Heading>
+                <Text variant="paragraph">
+                  Hooray! We have created the manual Mechanical Turk task for you. Check back later
+                  to see the submissions!
+                </Text>
+                <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
+              </Dialog>)}
+        </React.Fragment>
+    )
+  }
+
+  function TaskSelectButton({ table, recordId, doneField, response }) {
+    function onclick() {
+      completeTask(recordId).then((value) => {
+        table.updateRecordAsync(recordId, {
+          [doneField.id]: response,
+        });
+
+        setCompletedTasksFromServer(completedTasksFromServer.filter((item) => {
+          return item.cell_id !== recordId
+        }));
+      })
+    }
+
+    const permissionCheck = table.checkPermissionsForUpdateRecord(recordId, {
+      [doneField.id]: undefined,
+    });
+
+    return (
+        <Button
+            marginLeft={2}
+            onClick={onclick}
+            size="small"
+            disabled={!permissionCheck.hasPermission}
+        >
+          select
+        </Button>
+    );
+  }
+
+  function CompletedTask({ task, table, doneField }) {
+    return (
+        <div>
+          {responses(task, table, doneField)}
+        </div>
+    );
+  }
+
+  function responses(task, table, doneField) {
+    return task.responses.map(response => {
+      return <Box overflowX="auto" padding={2} marginTop={2} backgroundColor={colors.GREEN}
+                  border="thick"
+                  borderRadius={8}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          padding: 0
+        }}>
+          <Text paddingLeft={2} size="large" textColor={"white"}>{response}</Text>
+          <TaskSelectButton table={table} recordId={task.cell_id} doneField={doneField}
+                            response={response}/>
+        </div>
+      </Box>
+    })
   }
 
   return (
@@ -247,145 +407,10 @@ function MTurkBlock() {
         {settingsBox()}
         {createTaskBox()}
         {syncBox()}
-        {tasks}
-        {table && fromField && <AddTaskForm table={table}/>}
+        {uploadSuccessDialog()}
       </div>
   );
 }
 
-function Task({ record, table, doneField }) {
-  return (
-      <Box
-          fontSize={4}
-          paddingX={3}
-          paddingY={2}
-          marginRight={-2}
-          borderBottom="default"
-          display="flex"
-          alignItems="center"
-      >
-        <TaskDoneCheckbox table={table} record={record} doneField={doneField}/>
-        <a
-            style={{ cursor: 'pointer', flex: 'auto', padding: 8 }}
-            onClick={() => {
-              expandRecord(record);
-            }}
-        >
-          {record.primaryCellValueAsString || 'Unnamed record'}
-        </a>
-        <TaskDeleteButton table={table} record={record}/>
-      </Box>
-  );
-}
-
-function TaskDoneCheckbox({ table, record, doneField }) {
-  function onChange(event) {
-    table.updateRecordAsync(record, {
-      [doneField.id]: event.currentTarget.checked,
-    });
-  }
-
-  const permissionCheck = table.checkPermissionsForUpdateRecord(record, {
-    [doneField.id]: undefined,
-  });
-
-  return (
-      <input
-          type="checkbox"
-          checked={!!record.getCellValue(doneField)}
-          onChange={onChange}
-          style={{ marginRight: 8 }}
-          disabled={!permissionCheck.hasPermission}
-      />
-  );
-}
-
-function TaskDeleteButton({ table, record }) {
-  function onClick() {
-    table.deleteRecordAsync(record);
-  }
-
-  return (
-      <Button
-          variant="secondary"
-          marginLeft={1}
-          onClick={onClick}
-          disabled={!table.hasPermissionToDeleteRecord(record)}
-      >
-        <Icon name="x" style={{ display: 'flex' }}/>
-      </Button>
-  );
-}
-
-function AddTaskForm({ table }) {
-  const [taskName, setTaskName] = useState('');
-
-  function onInputChange(event) {
-    setTaskName(event.currentTarget.value);
-  }
-
-  function onSubmit(event) {
-    event.preventDefault();
-    table.createRecordAsync({
-      [table.primaryField.id]: taskName,
-    });
-    setTaskName('');
-  }
-
-  // check whether or not the user is allowed to create records with values in the primary field.
-  // if not, disable the form.
-  const isFormEnabled = table.hasPermissionToCreateRecord({
-    [table.primaryField.id]: undefined,
-  });
-  return (
-      <form onSubmit={onSubmit}>
-        <Box display="flex" padding={3}>
-          <Input
-              flex="auto"
-              value={taskName}
-              placeholder="New task"
-              onChange={onInputChange}
-              disabled={!isFormEnabled}
-          />
-          <Button variant="primary" marginLeft={2} marginTop={1} type="submit"
-                  disabled={!isFormEnabled}>
-            Add
-          </Button>
-        </Box>
-      </form>
-  );
-}
-
-async function getStatus(baseId) {
-  const requestUrl = `${BASE_URL}.json/?base_id=${baseId}`;
-  const result = await (await fetch(requestUrl, {
-    cors: true, headers: {
-      "Content-Type": "application/json",
-      "AWS_KEY": globalConfig.get('aws_key'),
-      "AWS_SECRET": globalConfig.get('aws_secret')
-    }
-  })).json();
-  return result;
-}
-
-async function uploadTask(baseId, cellId) {
-  const opts = {
-    base_id: baseId,
-    cell_id: cellId,
-    question: 'blah2'
-  }
-  const result = await (await fetch(`${BASE_URL}.json`, {
-    method: 'post', body: JSON.stringify(opts), cors: true, headers: {
-      "Content-Type": "application/json",
-      "AWS_KEY": globalConfig.get('aws_key'),
-      "AWS_SECRET": globalConfig.get('aws_secret')
-    },
-  })).json();
-  return result;
-}
-
-function delayAsync(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 initializeBlock(() => <MTurkBlock/>);

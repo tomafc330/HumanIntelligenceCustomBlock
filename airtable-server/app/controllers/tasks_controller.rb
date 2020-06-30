@@ -12,7 +12,7 @@ class TasksController < ApplicationController
     tasks = Task.where(base_id: params[:base_id])
     tasks.each do |task|
       responses = get_responses(task.hit_id).map { |r| parse_answer r.answer }
-      results << {cell_id: task.cell_id, hit_id: task.hit_id, responses: responses}
+      results << {cell_id: task.cell_id, hit_id: task.hit_id, question_raw: task.question_raw, responses: responses} unless responses.empty?
     end
 
     render json: results
@@ -22,7 +22,8 @@ class TasksController < ApplicationController
   def create
     params = JSON.parse(request.body.read)
     question = params['question']
-    num_tasks_requested = params['num_tasks_requested'] || 1
+    cost = params['cost']
+    num_tasks_requested = params['num_tasks_requested'] || 2
 
     # Step 1) Get your favorite HTML question
     my_html_question = p %{
@@ -52,7 +53,7 @@ class TasksController < ApplicationController
         lifetime_in_seconds: 60 * 60 * 24,
         assignment_duration_in_seconds: 120,
         max_assignments: num_tasks_requested,
-        reward: '0.20',
+        reward: cost.to_s,
         title: "Custom Task #{(0...8).map { (65 + rand(26)).chr }.join}",
         description: question,
         question: my_html_question,
@@ -61,6 +62,8 @@ class TasksController < ApplicationController
     Task.find_or_create_by!(
         base_id: params['base_id'],
         cell_id: params['cell_id'],
+        question: question,
+        question_raw: params['question_raw'],
         hit_id: result.hit.hit_id,
         num_tasks_requested: num_tasks_requested
     )
@@ -69,7 +72,9 @@ class TasksController < ApplicationController
   end
 
   def complete
-    task = Task.where(base_id: params[:base_id], cell_id: params[:cell_id]).first
+    params = JSON.parse(request.body.read)
+
+    task = Task.where(base_id: params['base_id'], cell_id: params['cell_id']).first
 
     unless task
       render json: false
@@ -77,7 +82,7 @@ class TasksController < ApplicationController
     end
 
     approve_all_submitted_assignments(task.hit_id)
-    delete_my_hit(hit_id)
+    delete_my_hit(task.hit_id)
 
     task.destroy
 
@@ -86,14 +91,16 @@ class TasksController < ApplicationController
 
   private
 
-
   def approve_all_submitted_assignments(hit_id)
-    get_responses(hit_id).each do |assignment|
-      puts "#{assignment.answer}"
-      @instance.approve_assignment(
-          assignment_id: assignment.assignment_id,
-          requester_feedback: 'Thanks for the great work!'
-      )
+    begin
+      get_responses(hit_id).each do |assignment|
+        @instance.approve_assignment(
+            assignment_id: assignment.assignment_id,
+            requester_feedback: 'Thanks for the great work!'
+        )
+      end
+    rescue Exception => e
+      puts "ERROR! #{e}"
     end
   end
 
@@ -104,10 +111,13 @@ class TasksController < ApplicationController
   end
 
   def delete_my_hit(hit_id)
-    puts "Deleting hit with id: #{hit_id}"
-    @instance.delete_hit(hit_id: hit_id)
-  rescue Aws::MTurk::Errors::RequestError => e
-    puts "DID NOT DELETE: This hit still has unsubmitted assigments."
+    begin
+      @instance.delete_hit(hit_id: hit_id)
+    rescue Aws::MTurk::Errors::RequestError => e
+      puts "DID NOT DELETE: This hit still has unsubmitted assigments."
+    rescue Exception => e
+      puts "ERROR! #{e}"
+    end
   end
 
   def set_instance
