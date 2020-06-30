@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  base_id: MyString
+  cell_id: MyString
+  num_tasks_requested: 1
+
+two:
+  base_id: MyString
+  cell_id: MyString
+  num_tasks_requested: 1
