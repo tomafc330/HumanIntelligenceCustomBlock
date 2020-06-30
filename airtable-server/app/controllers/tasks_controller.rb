@@ -11,7 +11,7 @@ class TasksController < ApplicationController
     results = []
     tasks = Task.where(base_id: params[:base_id])
     tasks.each do |task|
-      responses = get_responses(task.hit_id).map { |r| r.answer }
+      responses = get_responses(task.hit_id).map { |r| parse_answer r.answer }
       results << {cell_id: task.cell_id, hit_id: task.hit_id, responses: responses}
     end
 
@@ -22,7 +22,7 @@ class TasksController < ApplicationController
   def create
     params = JSON.parse(request.body.read)
     question = params['question']
-    num_tasks_requested = params['num_tasks_requested'] || 2
+    num_tasks_requested = params['num_tasks_requested'] || 1
 
     # Step 1) Get your favorite HTML question
     my_html_question = p %{
@@ -116,5 +116,10 @@ class TasksController < ApplicationController
 
     credentials = Aws::Credentials.new(request.headers['aws-key'], request.headers['aws-secret'])
     @instance = Aws::MTurk::Client.new(endpoint: endpoint, credentials: credentials, region: 'us-east-1')
+  end
+
+  def parse_answer string
+    doc = Nokogiri::XML(string)
+    return doc.css("FreeText").first.content
   end
 end

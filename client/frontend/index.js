@@ -361,8 +361,8 @@ async function getStatus(baseId) {
   const result = await (await fetch(requestUrl, {
     cors: true, headers: {
       "Content-Type": "application/json",
-      "key": globalConfig.get('aws_key'),
-      "secret": globalConfig.get('aws_secret')
+      "AWS_KEY": globalConfig.get('aws_key'),
+      "AWS_SECRET": globalConfig.get('aws_secret')
     }
   })).json();
   return result;

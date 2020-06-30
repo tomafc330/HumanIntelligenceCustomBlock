@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="Rails airtable: test" uuid="e622ff45-2ab9-4f36-bb12-28b15a0143a3">
+      <driver-ref>greenplum</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>$PROJECT_DIR$/config/database.yml</remarks>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://127.0.0.1:5432/airtable_test</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="Rails airtable: production" uuid="a94a8f7b-5105-4c78-8c18-dbdf67f26357">
+      <driver-ref>greenplum</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>$PROJECT_DIR$/config/database.yml</remarks>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://127.0.0.1:5432/airtable_production</jdbc-url>
+    </data-source>
+    <data-source source="LOCAL" name="Rails airtable: development" uuid="05dd9d9f-6041-48a4-8f65-f6b8cfbf4dbc">
+      <driver-ref>greenplum</driver-ref>
+      <synchronize>true</synchronize>
+      <imported>true</imported>
+      <remarks>$PROJECT_DIR$/config/database.yml</remarks>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://127.0.0.1:5432/airtable_development</jdbc-url>
+    </data-source>
+  </component>
+</project>

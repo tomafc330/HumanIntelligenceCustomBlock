@@ -58,3 +58,4 @@ gem 'aws-sdk'
 gem 'annotate'
 gem 'rack-cors'
 
+gem 'nokogiri'
