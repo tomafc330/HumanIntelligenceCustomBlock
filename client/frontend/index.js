@@ -15,24 +15,24 @@ import {
   Select,
   Text,
   useBase,
-  useGlobalConfig,
   useRecordById,
   useRecords,
-  useWatchable
+  useWatchable,
+  useGlobalConfig
 } from '@airtable/blocks/ui';
 import { FieldType } from '@airtable/blocks/models';
 import { cursor } from '@airtable/blocks';
+import {replaceText} from './utils';
 
-function MTurkBlock() {
+function HumanIntelligenceBlock() {
   const base = useBase();
 
   useWatchable(cursor, ['activeTableId', 'activeViewId']);
 
-  // Read the user's choice for which table and view to use from globalConfig.
   const globalConfig = useGlobalConfig();
   const tableId = cursor.activeTableId;
-  const fromFieldId = globalConfig.get('selectedFromFieldId');
-  const toFieldId = globalConfig.get('selectedToFieldId');
+  const fromFieldId = getGlobalValue('selectedFromFieldId');
+  const toFieldId = getGlobalValue('selectedToFieldId');
 
   const table = base.getTableByIdIfExists(tableId);
   const fromField = table ? table.getFieldByIdIfExists(fromFieldId) : null;
@@ -71,10 +71,6 @@ function MTurkBlock() {
 
   function getGlobalValue(key) {
     return globalConfig.get(key);
-  }
-
-  function replaceText(template, cellId) {
-    return template.replace("{text}", cellId);
   }
 
   function setTemplateOrDialog(newValue) {
@@ -118,8 +114,8 @@ function MTurkBlock() {
     const completedTasks = await (await fetch(requestUrl, {
       cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": globalConfig.get('aws_key'),
-        "AWS_SECRET": globalConfig.get('aws_secret')
+        "AWS_KEY": getGlobalValue('aws_key'),
+        "AWS_SECRET": getGlobalValue('aws_secret')
       }
     })).json();
     setCompletedTasksFromServer(completedTasks);
@@ -133,8 +129,8 @@ function MTurkBlock() {
     const result = await (await fetch(`${BASE_URL}/complete.json`, {
       method: 'post', body: JSON.stringify(opts), cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": globalConfig.get('aws_key'),
-        "AWS_SECRET": globalConfig.get('aws_secret')
+        "AWS_KEY": getGlobalValue('aws_key'),
+        "AWS_SECRET": getGlobalValue('aws_secret')
       },
     })).json();
   }
@@ -152,8 +148,8 @@ function MTurkBlock() {
     const result = await (await fetch(`${BASE_URL}.json`, {
       method: 'post', body: JSON.stringify(opts), cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": globalConfig.get('aws_key'),
-        "AWS_SECRET": globalConfig.get('aws_secret')
+        "AWS_KEY": getGlobalValue('aws_key'),
+        "AWS_SECRET": getGlobalValue('aws_secret')
       },
     })).json();
 
@@ -437,4 +433,4 @@ function MTurkBlock() {
 }
 
 
-initializeBlock(() => <MTurkBlock/>);
+initializeBlock(() => <HumanIntelligenceBlock/>);
