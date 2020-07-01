@@ -152,7 +152,7 @@ const UploadTaskBox = (props) => {
             type="submit"
             disabled={!selectedRecordId}
         >
-          Upload Task To Mechanical Turk
+          Upload Task to Human Intelligence
         </Button>
       </Box>
   )

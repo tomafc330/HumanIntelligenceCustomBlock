@@ -52,7 +52,7 @@ const SettingsBox = (props) => {
         <FormField label="Field to use data from" marginBottom={3}>
           <FieldPickerSynced
               table={table}
-              globalConfigKey="selectedFromFieldId"
+              globalConfigKey={`${table.id}_FromFieldId`}
               placeholder="Field to use data from"
               allowedTypes={[FieldType.MULTILINE_TEXT, FieldType.SINGLE_LINE_TEXT, FieldType.RICH_TEXT]}
           />
@@ -60,7 +60,7 @@ const SettingsBox = (props) => {
         <FormField label="Field to write data to" marginBottom={3}>
           <FieldPickerSynced
               table={table}
-              globalConfigKey="selectedToFieldId"
+              globalConfigKey={`${table.id}_ToFieldId`}
               placeholder="Field to write data to"
               allowedTypes={[FieldType.MULTILINE_TEXT, FieldType.SINGLE_LINE_TEXT, FieldType.RICH_TEXT]}
           />

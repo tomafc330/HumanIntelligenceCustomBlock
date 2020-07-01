@@ -24,10 +24,11 @@ function HumanIntelligenceBlock() {
 
   useWatchable(cursor, ['activeTableId', 'activeViewId']);
 
-  const globalConfig = useGlobalConfig();
   const tableId = cursor.activeTableId;
-  const fromFieldId = globalConfig.get('selectedFromFieldId');
-  const toFieldId = globalConfig.get('selectedToFieldId');
+
+  const globalConfig = useGlobalConfig();
+  const fromFieldId = globalConfig.get(`${tableId}_FromFieldId`);
+  const toFieldId = globalConfig.get(`${tableId}_ToFieldId`);
 
   const table = base.getTableByIdIfExists(tableId);
   const fromField = table ? table.getFieldByIdIfExists(fromFieldId) : null;
@@ -38,7 +39,7 @@ function HumanIntelligenceBlock() {
   const [customTemplateText, setCustomTemplateText] = useState('');
   const [costPerTask, setCostPerTask] = useState(0.20);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [completedTasksFromServer, setCompletedTasksFromServer] = useState([]);
+  const [completedTasksFromServer, setCompletedTasksFromServer] = useState(null);
 
   const currentRecord = useRecordById(table, selectedRecordId ? selectedRecordId : "");
 
@@ -66,6 +67,8 @@ function HumanIntelligenceBlock() {
   }
 
   async function getStatus(baseId) {
+    setCompletedTasksFromServer(null);
+
     const requestUrl = `${BASE_URL}.json/?base_id=${baseId}`;
     const completedTasks = await (await fetch(requestUrl, {
       cors: true, headers: {
@@ -115,7 +118,11 @@ function HumanIntelligenceBlock() {
   }
 
   function maybeDisplayCompletedTasks() {
-    return completedTasksFromServer
+    if (completedTasksFromServer == null) {
+      return null;
+    }
+
+    return completedTasksFromServer.length > 0
         ? completedTasksFromServer.map(task => {
           return <div>
             <div style={{
@@ -138,7 +145,7 @@ function HumanIntelligenceBlock() {
             />
           </div>;
         })
-        : null;
+        : <Text>There are no completed tasks yet! Please come back later and try again.</Text>;
   }
 
 
