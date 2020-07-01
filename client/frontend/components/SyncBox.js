@@ -9,7 +9,7 @@ const SyncBox = (props) => {
   const base = useBase();
 
   return (
-      <Box padding={3} paddingBottom={4} marginLeft={3} marginBottom={3} border="default"
+      <Box padding={3} paddingBottom={4} marginLeft={3} marginRight={3} marginBottom={3} border="default"
            borderRadius={8}>
         <div style={{
           display: 'flex',
@@ -18,7 +18,7 @@ const SyncBox = (props) => {
           padding: 0
         }}>
           <Icon name="bolt" size={23}/>
-          <Text paddingLeft={2} size="xsmall">Sync Completed Tasks</Text>
+          <Text paddingLeft={2} paddingRight={2} size="xsmall">Sync Completed Tasks</Text>
         </div>
         <Button
             marginBottom={3}

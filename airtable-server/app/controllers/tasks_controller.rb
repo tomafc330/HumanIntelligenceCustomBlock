@@ -107,7 +107,12 @@ class TasksController < ApplicationController
   def get_responses(hit_id)
     # NOTE: If you have more than 100 results, you'll need to page through using
     # a unique pagination token
-    @instance.list_assignments_for_hit(hit_id: hit_id).assignments
+    begin
+      @instance.list_assignments_for_hit(hit_id: hit_id).assignments
+    rescue Exception => e
+      puts "ERROR! #{e.message}"
+      []
+    end
   end
 
   def delete_my_hit(hit_id)
