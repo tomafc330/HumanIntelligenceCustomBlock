@@ -63,7 +63,7 @@ const UploadTaskBox = (props) => {
     options.push(
         {
           value: "custom",
-          label: "Custom"
+          label: "Add a Custom Template..."
         });
 
     return options;
