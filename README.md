@@ -54,3 +54,5 @@ The team knew React before this, but this is a good exercise to refresh our memo
 ![Step 4](media/4.png)
 ![Step 5](media/5.png)
 
+# Installation
+Currently, there is a frontend and a backend component of this, since the backend is the actor that sends in the API requests to Amazon's human marketplace. In the future, this could be refactored into a serverless deploy, but for now, you can navigate to the server folder, then install the gems necessary to run the poject and then issue `rails c` to start the server.
