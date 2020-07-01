@@ -1,16 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { BASE_URL } from './settings';
 import {
-  Box,
   Button,
-  colors,
-  Dialog,
-  FieldPickerSynced,
-  FormField,
-  Heading,
   Icon,
   initializeBlock,
-  Input,
   registerRecordActionDataCallback,
   Text,
   useBase,
@@ -24,6 +17,9 @@ import { cursor } from '@airtable/blocks';
 import { replaceText } from './utils';
 import UploadTaskBox from "./components/UploadTaskBox";
 import SettingsBox from "./components/SettingsBox";
+import SyncBox from "./components/SyncBox";
+import UploadSuccessDialog from "./components/UploadSuccessDialog";
+import CompletedTask from "./components/CompletedTask";
 
 function HumanIntelligenceBlock() {
   const base = useBase();
@@ -84,7 +80,7 @@ function HumanIntelligenceBlock() {
 
   function onAddCustomTemplate(event) {
     event.preventDefault();
-    const arr = getGlobalValue('customTemplateTexts')
+    const arr = getGlobalValue('customTemplateTexts') || [];
     arr.push(customTemplateText)
     setGlobalValue('customTemplateTexts', arr);
     setAddingCustomTemplate(false)
@@ -183,36 +179,17 @@ function HumanIntelligenceBlock() {
               <Icon name="checklist" size={23}/>
               <Text paddingLeft={2} size="xsmall">{task.question_raw}</Text>
             </div>
-            <CompletedTask key={task.cell_id} task={task} table={table} doneField={toField}/>
+            <CompletedTask key={task.cell_id}
+                           task={task}
+                           table={table}
+                           doneField={toField}
+                           completeTask={completeTask}
+                           setCompletedTasksFromServer={setCompletedTasksFromServer}
+                           completedTasksFromServer={completedTasksFromServer}
+            />
           </div>;
         })
         : null;
-  }
-
-  function syncBox() {
-    return <Box padding={3} paddingBottom={4} marginLeft={3} marginBottom={3} border="default"
-                borderRadius={8}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: 18,
-        padding: 0
-      }}>
-        <Icon name="bolt" size={23}/>
-        <Text paddingLeft={2} size="xsmall">Sync Completed Tasks</Text>
-      </div>
-      <Button
-          marginBottom={3}
-          onClick={() => getStatus(base.id)}
-          variant="primary"
-          size="large"
-          icon="premium"
-          type="submit"
-      >
-        Retrieve Completed Tasks
-      </Button>
-      {maybeDisplayCompletedTasks()}
-    </Box>;
   }
 
   function recordActionBlock() {
@@ -231,78 +208,6 @@ function HumanIntelligenceBlock() {
     }
   }
 
-  function uploadSuccessDialog() {
-    return (
-        <React.Fragment>
-          {isDialogOpen && (
-              <Dialog onClose={() => setIsDialogOpen(false)} width="320px">
-                <Dialog.CloseButton/>
-                <Heading>Task Uploaded!</Heading>
-                <Text variant="paragraph">
-                  Hooray! We have created the manual Mechanical Turk task for you. Check back later
-                  to see the submissions!
-                </Text>
-                <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
-              </Dialog>)}
-        </React.Fragment>
-    )
-  }
-
-  function TaskSelectButton({ table, recordId, doneField, response }) {
-    function onclick() {
-      completeTask(recordId).then((value) => {
-        table.updateRecordAsync(recordId, {
-          [doneField.id]: response,
-        });
-
-        setCompletedTasksFromServer(completedTasksFromServer.filter((item) => {
-          return item.cell_id !== recordId
-        }));
-      })
-    }
-
-    const permissionCheck = table.checkPermissionsForUpdateRecord(recordId, {
-      [doneField.id]: undefined,
-    });
-
-    return (
-        <Button
-            marginLeft={2}
-            onClick={onclick}
-            size="small"
-            disabled={!permissionCheck.hasPermission}
-        >
-          select
-        </Button>
-    );
-  }
-
-  function CompletedTask({ task, table, doneField }) {
-    return (
-        <div>
-          {responses(task, table, doneField)}
-        </div>
-    );
-  }
-
-  function responses(task, table, doneField) {
-    return task.responses.map(response => {
-      return <Box overflowX="auto" padding={2} marginTop={2} backgroundColor={colors.GREEN}
-                  border="thick"
-                  borderRadius={8}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          padding: 0
-        }}>
-          <Text paddingLeft={2} size="large" textColor={"white"}>{response}</Text>
-          <TaskSelectButton table={table} recordId={task.cell_id} doneField={doneField}
-                            response={response}/>
-        </div>
-      </Box>
-    })
-  }
-
   return (
       <div>
         {<SettingsBox table={table}/>}
@@ -319,11 +224,11 @@ function HumanIntelligenceBlock() {
                                                setCustomTemplateText={setCustomTemplateText}
                                                uploadTask={uploadTask}
                                                reviewOutputText={reviewOutputText}/> : null}
-        {fromField && toField ? syncBox() : null}
-        {uploadSuccessDialog()}
+        {fromField && toField ? <SyncBox getStatus={getStatus}
+                                         maybeDisplayCompletedTasks={maybeDisplayCompletedTasks}/> : null}
+        {<UploadSuccessDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen}/>}
       </div>
   );
 }
-
 
 initializeBlock(() => <HumanIntelligenceBlock/>);
