@@ -1,9 +1,9 @@
-# Human Inteligence Custom BLock
+# Human Inteligence Custom Block
 
 ## Inspiration
 As an indie game developer, we have limited resource as we are a small studio. Therefore, we fork out some of the small piecemeal work to third party workers via Amazon Mechanical Turk. Amazon Mechanical Turk (MTurk) is a marketplace for completion of virtual tasks that requires human intelligence. The Mechanical Turk service gives businesses access to a diverse, on-demand, scalable workforce and gives Workers a selection of thousands of tasks to complete whenever it's convenient.
 
-Prior to discovering Airtable, we were using manual spreadsheets to keep track of tasks that the third parties were doing for us and tracking the results manually, and the whole process was tedious and messy.
+Prior to discovering Airtable, we were using manual spreadsheets to keep track of tasks that the third parties on the Amazon human intelligence were doing for us and tracking the results manually, and the whole process was tedious and messy.
 
 ## What it does
 
