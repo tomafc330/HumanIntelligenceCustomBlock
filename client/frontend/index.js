@@ -21,8 +21,9 @@ import {
 } from '@airtable/blocks/ui';
 import { FieldType } from '@airtable/blocks/models';
 import { cursor } from '@airtable/blocks';
-import {replaceText} from './utils';
+import { replaceText } from './utils';
 import UploadTaskBox from "./components/UploadTaskBox";
+import SettingsBox from "./components/SettingsBox";
 
 function HumanIntelligenceBlock() {
   const base = useBase();
@@ -156,47 +157,6 @@ function HumanIntelligenceBlock() {
     if (result) {
       setIsDialogOpen(true);
     }
-  }
-
-  function settingsBox() {
-    return <Box padding={3} margin={3} border="default" borderRadius={8}>
-      <Heading paddingTop={1} size="medium">Welcome to Human Intelligence Block (HIB)</Heading>
-      <Heading size="xsmall" textColor="light">Get manual tasks done for you easily on the Amazon tasks marketplace! Please
-        follow the these instructions to get started.</Heading>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        fontSize: 18,
-        padding: 0
-      }}>
-        <Icon name="ul" size={23}/>
-        <Text paddingLeft={2} size="xsmall">Configuration</Text>
-      </div>
-      <FormField label="AWS Key">
-        <Input value={getGlobalValue("aws_key")}
-               onChange={e => setGlobalValue("aws_key", e.target.value)}/>
-      </FormField>
-      <FormField label="AWS Secret">
-        <Input value={getGlobalValue("aws_secret")}
-               onChange={e => setGlobalValue("aws_secret", e.target.value)}/>
-      </FormField>
-      <FormField label="Field to use data from" marginBottom={3}>
-        <FieldPickerSynced
-            table={table}
-            globalConfigKey="selectedFromFieldId"
-            placeholder="Field to use data from"
-            allowedTypes={[FieldType.MULTILINE_TEXT, FieldType.SINGLE_LINE_TEXT, FieldType.RICH_TEXT]}
-        />
-      </FormField>
-      <FormField label="Field to write data to" marginBottom={3}>
-        <FieldPickerSynced
-            table={table}
-            globalConfigKey="selectedToFieldId"
-            placeholder="Field to write data to"
-            allowedTypes={[FieldType.MULTILINE_TEXT, FieldType.SINGLE_LINE_TEXT, FieldType.RICH_TEXT]}
-        />
-      </FormField>
-    </Box>;
   }
 
   function reviewOutputText() {
@@ -345,8 +305,20 @@ function HumanIntelligenceBlock() {
 
   return (
       <div>
-        {settingsBox()}
-        {fromField && toField ? <UploadTaskBox fromField={fromField} costPerTask={costPerTask} setCostPerTask={setCostPerTask} populateTemplates={populateTemplates} template={template} setTemplateOrDialog={setTemplateOrDialog} onAddCustomTemplate={onAddCustomTemplate} addingCustomTemplate={addingCustomTemplate} records={records} setSelectedRecordId={setSelectedRecordId} selectedRecordId={selectedRecordId} setCustomTemplateText={setCustomTemplateText} uploadTask={uploadTask} reviewOutputText={reviewOutputText}/> : null}
+        {<SettingsBox table={table}/>}
+        {fromField && toField ? <UploadTaskBox fromField={fromField} costPerTask={costPerTask}
+                                               setCostPerTask={setCostPerTask}
+                                               populateTemplates={populateTemplates}
+                                               template={template}
+                                               setTemplateOrDialog={setTemplateOrDialog}
+                                               onAddCustomTemplate={onAddCustomTemplate}
+                                               addingCustomTemplate={addingCustomTemplate}
+                                               records={records}
+                                               setSelectedRecordId={setSelectedRecordId}
+                                               selectedRecordId={selectedRecordId}
+                                               setCustomTemplateText={setCustomTemplateText}
+                                               uploadTask={uploadTask}
+                                               reviewOutputText={reviewOutputText}/> : null}
         {fromField && toField ? syncBox() : null}
         {uploadSuccessDialog()}
       </div>
