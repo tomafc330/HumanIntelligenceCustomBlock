@@ -1,14 +1,83 @@
 import React, { useState } from 'react';
-import { Box, Button, FormField, Icon, Input, Select, Text, useBase } from '@airtable/blocks/ui';
+import {
+  Box,
+  Button,
+  FormField,
+  Icon,
+  Input,
+  Select,
+  Text,
+  useBase,
+  useGlobalConfig
+} from '@airtable/blocks/ui';
+import { replaceText } from "../utils";
 
 const UploadTaskBox = (props) => {
-  const { costPerTask, setCostPerTask,
-    populateTemplates, template, setTemplateOrDialog,
-    onAddCustomTemplate, addingCustomTemplate, setCustomTemplateText, records,
-    selectedRecordId, setSelectedRecordId, reviewOutputText, uploadTask, fromField
+  const { costPerTask, setCostPerTask, customTemplateText,
+    template, setAddingCustomTemplate, setTemplate,
+    addingCustomTemplate, setCustomTemplateText, records,
+    selectedRecordId, setSelectedRecordId, uploadTask, fromField, currentRecord
   } = props;
 
+  const options = [
+    {
+      value: "Please translate this text into French - '{text}'",
+      label: "Manual Translation To French"
+    },
+    {
+      value: "Please find a recent 1-2 lines newsworthy summary for the company {text}.",
+      label: "Sales"
+    },
+  ];
   const base = useBase();
+  const globalConfig = useGlobalConfig();
+
+  function setTemplateOrDialog(newValue) {
+    if (newValue === 'custom') {
+      setAddingCustomTemplate(true)
+    } else {
+      setTemplate(newValue)
+    }
+  }
+
+  function reviewOutputText() {
+    return (currentRecord ? <Text
+        display={selectedRecordId ? 'block' : 'none'}
+        disabled={!selectedRecordId}
+        style={{
+          fontStyle: 'italic',
+          fontWeight: 'bold'
+        }}>{replaceText(template, currentRecord.getCellValueAsString(fromField))}</Text> : null);
+  }
+
+  function populateTemplates() {
+    let globalValue = globalConfig.get('customTemplateTexts');
+    if (globalValue) {
+      globalValue.map(customText => {
+        options.push({
+          value: customText,
+          label: customText
+        })
+      })
+    }
+    options.push(
+        {
+          value: "custom",
+          label: "Custom"
+        });
+
+    return options;
+  }
+
+  function onAddCustomTemplate(event) {
+    event.preventDefault();
+    const arr = globalConfig.get('customTemplateTexts') || [];
+    arr.push(customTemplateText)
+    globalConfig.setAsync('customTemplateTexts', arr);
+    setAddingCustomTemplate(false)
+    setCustomTemplateText('');
+  }
+
 
   return (
       <Box padding={3} margin={3} border="default" borderRadius={8}>

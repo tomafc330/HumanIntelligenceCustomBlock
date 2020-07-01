@@ -1,18 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { BASE_URL } from './settings';
 import {
-  Button,
   Icon,
   initializeBlock,
   registerRecordActionDataCallback,
   Text,
   useBase,
+  useGlobalConfig,
   useRecordById,
   useRecords,
-  useWatchable,
-  useGlobalConfig
+  useWatchable
 } from '@airtable/blocks/ui';
-import { FieldType } from '@airtable/blocks/models';
 import { cursor } from '@airtable/blocks';
 import { replaceText } from './utils';
 import UploadTaskBox from "./components/UploadTaskBox";
@@ -28,8 +26,8 @@ function HumanIntelligenceBlock() {
 
   const globalConfig = useGlobalConfig();
   const tableId = cursor.activeTableId;
-  const fromFieldId = getGlobalValue('selectedFromFieldId');
-  const toFieldId = getGlobalValue('selectedToFieldId');
+  const fromFieldId = globalConfig.get('selectedFromFieldId');
+  const toFieldId = globalConfig.get('selectedToFieldId');
 
   const table = base.getTableByIdIfExists(tableId);
   const fromField = table ? table.getFieldByIdIfExists(fromFieldId) : null;
@@ -48,62 +46,23 @@ function HumanIntelligenceBlock() {
   // have been deleted, or may not have been selected yet.)
   const records = useRecords(table, { fields: [fromField] });
 
-  const options = [
-    {
-      value: "Please translate this text into French - '{text}'",
-      label: "Manual Translation To French"
-    },
-    {
-      value: "Please find a recent 1-2 lines newsworthy summary for the company {text}.",
-      label: "Sales"
-    },
-  ];
-  const [template, setTemplate] = useState(options[0].value);
+  const [template, setTemplate] = useState('');
 
-  recordActionBlock();
+  watchButtonClicks();
 
-  function setGlobalValue(key, value) {
-    globalConfig.setAsync(key, value);
-  }
-
-  function getGlobalValue(key) {
-    return globalConfig.get(key);
-  }
-
-  function setTemplateOrDialog(newValue) {
-    if (newValue === 'custom') {
-      setAddingCustomTemplate(true)
-    } else {
-      setTemplate(newValue)
+  function watchButtonClicks() {
+    const [recordActionData, setRecordActionData] = useState(null);
+    const callback = (data) => {
+      setRecordActionData(data);
+      setSelectedRecordId(data.recordId);
     }
-  }
-
-  function onAddCustomTemplate(event) {
-    event.preventDefault();
-    const arr = getGlobalValue('customTemplateTexts') || [];
-    arr.push(customTemplateText)
-    setGlobalValue('customTemplateTexts', arr);
-    setAddingCustomTemplate(false)
-    setCustomTemplateText('');
-  }
-
-  function populateTemplates() {
-    let globalValue = getGlobalValue('customTemplateTexts');
-    if (globalValue) {
-      globalValue.map(customText => {
-        options.push({
-          value: customText,
-          label: customText
-        })
-      })
+    useEffect(() => {
+      // Return the unsubscribe function so it's run on cleanup.
+      return registerRecordActionDataCallback(callback);
+    }, [callback]);
+    if (recordActionData === null) {
+      return null;
     }
-    options.push(
-        {
-          value: "custom",
-          label: "Custom"
-        });
-
-    return options;
   }
 
   async function getStatus(baseId) {
@@ -111,8 +70,8 @@ function HumanIntelligenceBlock() {
     const completedTasks = await (await fetch(requestUrl, {
       cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": getGlobalValue('aws_key'),
-        "AWS_SECRET": getGlobalValue('aws_secret')
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
       }
     })).json();
     setCompletedTasksFromServer(completedTasks);
@@ -123,11 +82,11 @@ function HumanIntelligenceBlock() {
       base_id: base.id,
       cell_id: cellId,
     }
-    const result = await (await fetch(`${BASE_URL}/complete.json`, {
+    await (await fetch(`${BASE_URL}/complete.json`, {
       method: 'post', body: JSON.stringify(opts), cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": getGlobalValue('aws_key'),
-        "AWS_SECRET": getGlobalValue('aws_secret')
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
       },
     })).json();
   }
@@ -145,24 +104,14 @@ function HumanIntelligenceBlock() {
     const result = await (await fetch(`${BASE_URL}.json`, {
       method: 'post', body: JSON.stringify(opts), cors: true, headers: {
         "Content-Type": "application/json",
-        "AWS_KEY": getGlobalValue('aws_key'),
-        "AWS_SECRET": getGlobalValue('aws_secret')
+        "AWS_KEY": globalConfig.get('aws_key'),
+        "AWS_SECRET": globalConfig.get('aws_secret')
       },
     })).json();
 
     if (result) {
       setIsDialogOpen(true);
     }
-  }
-
-  function reviewOutputText() {
-    return (currentRecord ? <Text
-        display={selectedRecordId ? 'block' : 'none'}
-        disabled={!selectedRecordId}
-        style={{
-          fontStyle: 'italic',
-          fontWeight: 'bold'
-        }}>{replaceText(template, currentRecord.getCellValueAsString(fromField))}</Text> : null);
   }
 
   function maybeDisplayCompletedTasks() {
@@ -192,38 +141,24 @@ function HumanIntelligenceBlock() {
         : null;
   }
 
-  function recordActionBlock() {
-    const [recordActionData, setRecordActionData] = useState(null);
-    const callback = (data) => {
-      console.log('Record action received', data);
-      setRecordActionData(data);
-      setSelectedRecordId(data.recordId);
-    }
-    useEffect(() => {
-      // Return the unsubscribe function so it's run on cleanup.
-      return registerRecordActionDataCallback(callback);
-    }, [callback]);
-    if (recordActionData === null) {
-      return null;
-    }
-  }
 
   return (
       <div>
         {<SettingsBox table={table}/>}
         {fromField && toField ? <UploadTaskBox fromField={fromField} costPerTask={costPerTask}
                                                setCostPerTask={setCostPerTask}
-                                               populateTemplates={populateTemplates}
                                                template={template}
-                                               setTemplateOrDialog={setTemplateOrDialog}
-                                               onAddCustomTemplate={onAddCustomTemplate}
+                                               customTemplateText={customTemplateText}
                                                addingCustomTemplate={addingCustomTemplate}
                                                records={records}
                                                setSelectedRecordId={setSelectedRecordId}
                                                selectedRecordId={selectedRecordId}
                                                setCustomTemplateText={setCustomTemplateText}
+                                               setAddingCustomTemplate={setAddingCustomTemplate}
+                                               setTemplate={setTemplate}
                                                uploadTask={uploadTask}
-                                               reviewOutputText={reviewOutputText}/> : null}
+                                               currentRecord={currentRecord}
+        /> : null}
         {fromField && toField ? <SyncBox getStatus={getStatus}
                                          maybeDisplayCompletedTasks={maybeDisplayCompletedTasks}/> : null}
         {<UploadSuccessDialog isDialogOpen={isDialogOpen} setIsDialogOpen={setIsDialogOpen}/>}
