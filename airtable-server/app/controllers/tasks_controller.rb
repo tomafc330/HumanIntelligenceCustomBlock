@@ -54,7 +54,7 @@ class TasksController < ApplicationController
         assignment_duration_in_seconds: 120,
         max_assignments: num_tasks_requested,
         reward: cost.to_s,
-        title: "Custom Task #{(0...8).map { (65 + rand(26)).chr }.join}",
+        title: "Human Intelligence Block Task ##{(0...8).map { (65 + rand(26)).chr }.join}",
         description: question,
         question: my_html_question,
     )
