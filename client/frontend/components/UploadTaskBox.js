@@ -13,7 +13,7 @@ import {
 import { replaceText } from "../utils";
 
 const UploadTaskBox = (props) => {
-  const { costPerTask, setCostPerTask, customTemplateText,
+  const { costPerTask, setCostPerTask, customTemplateText, numTasksRequested, setNumTasksRequested,
     template, setAddingCustomTemplate, setTemplate,
     addingCustomTemplate, setCustomTemplateText, records,
     selectedRecordId, setSelectedRecordId, uploadTask, fromField, currentRecord
@@ -98,6 +98,16 @@ const UploadTaskBox = (props) => {
               value={costPerTask}
               onChange={e => setCostPerTask(e.target.value)}
               placeholder="ie. 0.20"
+          />
+        </FormField>
+
+        <FormField label="Maximum workers allowed for this task">
+          <Input
+              type="textarea"
+              flex="auto"
+              value={numTasksRequested}
+              onChange={e => setNumTasksRequested(e.target.value)}
+              placeholder="2"
           />
         </FormField>
 

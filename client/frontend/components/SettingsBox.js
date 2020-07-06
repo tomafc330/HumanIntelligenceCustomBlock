@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Box,
+  Box, Button,
   FieldPickerSynced,
   FormField,
   Heading,
@@ -13,7 +13,8 @@ import { FieldType } from "@airtable/blocks/models";
 
 const SettingsBox = (props) => {
   const {
-    table
+    table,
+    setIsShowingSettings
   } = props;
 
   const globalConfig = useGlobalConfig();
@@ -65,6 +66,11 @@ const SettingsBox = (props) => {
               allowedTypes={[FieldType.MULTILINE_TEXT, FieldType.SINGLE_LINE_TEXT, FieldType.RICH_TEXT]}
           />
         </FormField>
+
+        <Button variant="primary" marginLeft={0} marginTop={1}
+                onClick={() => setIsShowingSettings(false)}>
+          Back
+        </Button>
       </Box>
   )
 }

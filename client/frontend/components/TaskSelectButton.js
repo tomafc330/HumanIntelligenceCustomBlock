@@ -30,9 +30,10 @@ const TaskSelectButton = (props) => {
           marginLeft={2}
           onClick={onclick}
           size="small"
+          icon="check"
+          variant="primary"
           disabled={!permissionCheck.hasPermission}
       >
-        select
       </Button>
   );
 }

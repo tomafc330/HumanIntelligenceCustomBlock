@@ -13,7 +13,7 @@ const CompletedTask = (props) => {
 
   function responses(task, table, doneField) {
     return task.responses.map(response => {
-      return <Box overflowX="auto" padding={2} marginTop={2} backgroundColor={colors.GREEN}
+      return <Box overflowX="auto" padding={1} marginTop={2}
                   border="thick"
                   borderRadius={8}>
         <div style={{
@@ -21,7 +21,7 @@ const CompletedTask = (props) => {
           alignItems: 'center',
           padding: 0
         }}>
-          <Text paddingLeft={2} size="large" textColor={"white"}>{response}</Text>
+          <Text paddingLeft={2} size="default" >{response}</Text>
           <TaskSelectButton table={table} recordId={task.cell_id} doneField={doneField}
                             response={response} completeTask={completeTask} setCompletedTasksFromServer={setCompletedTasksFromServer} completedTasksFromServer={completedTasksFromServer} />
         </div>

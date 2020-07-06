@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BASE_URL } from './settings';
 import {
   Icon,
+  Box,
   initializeBlock,
   registerRecordActionDataCallback,
   Text,
@@ -9,15 +10,16 @@ import {
   useGlobalConfig,
   useRecordById,
   useRecords,
-  useWatchable
+  useWatchable,
+  useSettingsButton
 } from '@airtable/blocks/ui';
 import { cursor } from '@airtable/blocks';
 import { replaceText } from './utils';
 import UploadTaskBox from "./components/UploadTaskBox";
-import SettingsBox from "./components/SettingsBox";
 import SyncBox from "./components/SyncBox";
 import UploadSuccessDialog from "./components/UploadSuccessDialog";
 import CompletedTask from "./components/CompletedTask";
+import SettingsComponent from "./components/SettingsComponent";
 
 function HumanIntelligenceBlock() {
   const base = useBase();
@@ -38,8 +40,10 @@ function HumanIntelligenceBlock() {
   const [addingCustomTemplate, setAddingCustomTemplate] = useState(false);
   const [customTemplateText, setCustomTemplateText] = useState('');
   const [costPerTask, setCostPerTask] = useState(0.20);
+  const [numTasksRequested, setNumTasksRequested] = useState(2);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [completedTasksFromServer, setCompletedTasksFromServer] = useState(null);
+  const [isShowingSettings, setIsShowingSettings] = useState(false);
 
   const currentRecord = useRecordById(table, selectedRecordId ? selectedRecordId : "");
 
@@ -102,7 +106,8 @@ function HumanIntelligenceBlock() {
       cell_id: selectedRecordId,
       question_raw: questionRaw,
       question: question,
-      cost: costPerTask
+      cost: costPerTask,
+      num_tasks_requested: numTasksRequested
     }
     const result = await (await fetch(`${BASE_URL}.json`, {
       method: 'post', body: JSON.stringify(opts), cors: true, headers: {
@@ -124,17 +129,24 @@ function HumanIntelligenceBlock() {
 
     return completedTasksFromServer.length > 0
         ? completedTasksFromServer.map(task => {
-          return <div>
+          return <Box
+              border="default"
+              borderRadius={8}
+              backgroundColor="white"
+              padding={3}
+          >
             <div style={{
-              marginTop: 8,
+              marginTop: 3,
+              marginLeft: 3,
               display: 'flex',
               alignItems: 'center',
-              fontSize: 18,
+              fontSize: 12,
               padding: 0
             }}>
               <Icon name="checklist" size={23}/>
-              <Text paddingLeft={2} size="xsmall">{task.question_raw}</Text>
+              <Text paddingLeft={2} size="xsmall" as="strong">Completed Task</Text>
             </div>
+            <Text  size="xsmall">{task.question_raw}</Text>
             <CompletedTask key={task.cell_id}
                            task={task}
                            table={table}
@@ -143,17 +155,26 @@ function HumanIntelligenceBlock() {
                            setCompletedTasksFromServer={setCompletedTasksFromServer}
                            completedTasksFromServer={completedTasksFromServer}
             />
-          </div>;
+          </Box>;
         })
         : <Text>There are no completed tasks yet! Please come back later and try again.</Text>;
   }
 
+  useSettingsButton(function () {
+    setIsShowingSettings(!isShowingSettings);
+  });
+
+  if (isShowingSettings) {
+    return <SettingsComponent table={table} setIsShowingSettings={setIsShowingSettings}/>
+  }
 
   return (
       <div>
-        {<SettingsBox table={table}/>}
-        {fromField && toField ? <UploadTaskBox fromField={fromField} costPerTask={costPerTask}
+        {fromField && toField ? <UploadTaskBox fromField={fromField}
+                                               costPerTask={costPerTask}
                                                setCostPerTask={setCostPerTask}
+                                               numTasksRequested={numTasksRequested}
+                                               setNumTasksRequested={setNumTasksRequested}
                                                template={template}
                                                customTemplateText={customTemplateText}
                                                addingCustomTemplate={addingCustomTemplate}

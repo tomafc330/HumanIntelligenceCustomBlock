@@ -17,7 +17,7 @@ const SyncBox = (props) => {
           fontSize: 18,
           padding: 0
         }}>
-          <Icon name="bolt" size={23}/>
+          <Icon name="time" size={23}/>
           <Text paddingLeft={2} paddingRight={2} size="xsmall">Sync Completed Tasks</Text>
         </div>
         <Button
@@ -25,7 +25,7 @@ const SyncBox = (props) => {
             onClick={() => getStatus(base.id)}
             variant="primary"
             size="large"
-            icon="premium"
+            icon="time"
             type="submit"
         >
           Retrieve Completed Tasks
