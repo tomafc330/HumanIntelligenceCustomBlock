@@ -12,7 +12,7 @@ class TasksController < ApplicationController
     tasks = Task.where(base_id: params[:base_id])
     tasks.each do |task|
       responses = get_responses(task.hit_id).map { |r| parse_answer r.answer }
-      results << {cell_id: task.cell_id, hit_id: task.hit_id, question_raw: task.question_raw, responses: responses} unless responses.empty?
+      results << {cell_id: task.cell_id, hit_id: task.hit_id, question: task.question, question_raw: task.question_raw, responses: responses} unless responses.empty?
     end
 
     render json: results
