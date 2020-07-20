@@ -46,15 +46,17 @@ Afterwards, please sign up with an Amazon AWS (if you haven't done so already), 
 
 The next step is to create an account on the MTurk requester site. Once you’ve done that, head over to the Developer tab and scroll down until you see the Link your AWS Account option. You’ll need to link these accounts together for programmatic access.
 
+Once you have configured the above, then you can set the AWS key and secret in the configuration section in the block (click on the gears icon after you deployed your block to see the configuration screen).
+
 ## Important Note
 Amazon has 2 environments for the Mechanical Turk service. Always use the development sandbox first to test your jobs, otherwise you will be charged for them when you deploy it to production.
 
-Sandbox login (as the admin, to create the api):
+- Sandbox login (as the admin, to create the api):
 https://requestersandbox.mturk.com/developer
-Sandbox login (as a tester, to test fulfilling jobs):
+- Sandbox login (as a tester, to test fulfilling jobs):
 https://workersandbox.mturk.com/
 
-Production login (as the admin):
+- Production login (as the admin):
 https://requester.mturk.com/developer
-Production login (as a tester, to test fulfilling jobs):
+- Production login (as a tester, to test fulfilling jobs):
 https://worker.mturk.com/
