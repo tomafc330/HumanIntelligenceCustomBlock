@@ -17,42 +17,26 @@ Use Case 2.) We are constantly prospecting other companies to do partnerships wi
 
 While building this block, we realize we need to be flexible since Airtable supports many different use cases (which is why Airtable is much better than a spreadsheet), so we created a way for people to create custom templates (ie. instructions to workers) that they can use for their use case prior to sending to Mechanical Turk. Thus, true to the spirit of Airtable, we allow users to create their own tasks that they want to post to the Mechanical Turk marketplace.
 
-We are also using the newly released Button feature to activate the block so it's easy for a user to activate and upload a task easily.
+If you would like to customize the plugin (for example, ask qualifying questions before accepting workers), you can customize the logic in the server under the `airtable-server` folder. It is a standard Rails 5 application and deployment instructions are in the folder.
 
-## How we built it
+We are also using the newly released Button feature to activate the block so it's easy for a user to activate and upload a task easily. Just send the data to the block after you create the button and it will know what to do.
 
-We are using the custom blocks to integrate with the UI (thanks Airtable team for the awesome documentation). We do have a backend server that handles the creation of the tasks to be posted on to the human intelligence marketplace and to retrieve the tasks. 
-
-## Challenges we ran into
-
-It was really about learning how the mehanicism of read and updating the data and syncing with the Airtable UI. 
-
-We would like to have the backend update the syncing automatically (currently the user has to click a button to sync the responses from the human intelligence marketplace).
-
-## Accomplishments that we're proud of
-
-## What we learned
-
-Before we started looking into AirTables, we thought Airtable was just another Google Sheets competitor. After I saw the use cases and the things that blocks can do, we were a bit blown away. There's only a few use cases listed on the main site, but the extensibility of the blocks and scripts is much better than Sheets. I think prehaps listing more use cases on the site would be good for potential users to find the Aha moment.
-
-The team knew React before this, but this is a good exercise to refresh our memory!
-
-## What's next for Human Intelligence Remote Block
-
-- I would like to make this plugin not require a backend, so prehaps adding instructions to deploy to a serverless context would be beneficial if people find that useful.
-
-- The marketplace has an option to only include certain workers from certain geographic regions. That would be a nice addition to add to the block configuration.
-
-- The marketplace has an option to set the max number of results from workers. We set it to 2 because we want to make sure the data comes back more or less matches and is consistent. That would be a nice addition to add to the block configuration if users find it useful to be able to vary this.
-
+If you run into any issues, feel free to create an issue and I can try to help.
 
 ## Screenshots
 
 ![Step 1](media/1.png)
 ![Step 2](media/2.png)
 ![Step 3](media/3.png)
-![Step 4](media/4.png)
+![Step 4](media/4.jpg)
 ![Step 5](media/5.png)
+![Vid 1](media/hibpart1.gif)
+![Vid 2](media/hibpart2.gif)
 
 # Installation
-Currently, there is a frontend and a backend component of this, since the backend is the actor that sends in the API requests to Amazon's human marketplace. In the future, this could be refactored into a serverless deploy, but for now, you can navigate to the server folder, then install the gems necessary to run the poject and then issue `rails c` to start the server.
+## How to remix this block
+Create a new base (or you can use an existing base).
+
+Create a new block in your base (see Create a new block, selecting "Remix from Github" as your template. Choose the folder `client`, which will have the configuration settings. If you need custom backend logic, then you will need to deploy your own server, if not then you don't have to edit any configurations in `client/settings.js`
+
+From the root of client block (ie: `client`), run block run.
