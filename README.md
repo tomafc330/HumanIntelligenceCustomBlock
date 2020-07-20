@@ -35,8 +35,26 @@ If you run into any issues, feel free to create an issue and I can try to help.
 
 # Installation
 ## How to remix this block
+
 Create a new base (or you can use an existing base).
 
-Create a new block in your base (see Create a new block, selecting "Remix from Github" as your template. Choose the folder `client`, which will have the configuration settings. If you need custom backend logic, then you will need to deploy your own server, if not then you don't have to edit any configurations in `client/settings.js`
+Create a new block in your base (see Create a new block, selecting "Remix from Github" as your template. Choose the folder `client`, which will have the configuration settings. For testing, you don't need to set up your own backend since the default settings will use a sandbox backend. When you are ready to move to production, you will need to deploy your own server (it's only a few lines of code, see `airtable-server` for instructions). 
 
 From the root of client block (ie: `client`), run block run.
+
+Afterwards, please sign up with an Amazon AWS (if you haven't done so already), and then make sure that account is linked to Mechanical Turk. Then you need to create an API key that has access to Mechanical Turk. We’ll create an IAM user with credentials that we’ll use to play around in the sandbox, but that don’t grant root access. Once the account is set up and you are signed in to your dashboard, type ‘iam’ in the AWS Services search bar. This will take you to your users dashboard; on the left hand side, go to the users menu and then click Add User. You can now set a name for this user; I recommend something obvious, like reqester_sandbox or mturk. Below that, you want to check the Enable Programmatic Access box. On the next page, you can select Attach existing policies directly (unless you want to deal with setting up groups, which can be useful if you’re managing lab members and multiple people will need the same set of permissions). Since we’re only dealing with MTurk, we don’t have to get too fancy. If you search for mechanical in the policy search bar, you’ll see one that says AmazonMechanicalTurkFullAccess. This is the policy we want to attach to this user; it gives full read and write access to MTurk. Check the box next to it and hit Review, then Create User. On this next screen, you will be presented with two very important pieces of information; the user access key, and the secret key. This is your only chance to take note of the secret key, so make a note of both of these passwords somewhere. You will need those when we configure the block.
+
+The next step is to create an account on the MTurk requester site. Once you’ve done that, head over to the Developer tab and scroll down until you see the Link your AWS Account option. You’ll need to link these accounts together for programmatic access.
+
+## Important Note
+Amazon has 2 environments for the Mechanical Turk service. Always use the development sandbox first to test your jobs, otherwise you will be charged for them when you deploy it to production.
+
+Sandbox login (as the admin, to create the api):
+https://requestersandbox.mturk.com/developer
+Sandbox login (as a tester, to test fulfilling jobs):
+https://workersandbox.mturk.com/
+
+Production login (as the admin):
+https://requester.mturk.com/developer
+Production login (as a tester, to test fulfilling jobs):
+https://worker.mturk.com/
